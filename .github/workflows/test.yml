@@ -53,7 +53,7 @@ jobs:
           python3 -m json.tool ./output/fs.json | head -50
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: v86-filesystem
           path: output/v86-fs.tar.gz
