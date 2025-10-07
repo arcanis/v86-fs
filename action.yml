@@ -1,0 +1,66 @@
+name: 'Create v86 Filesystem'
+description: 'Clones copy/v86 repository and creates a v86 filesystem from a source directory'
+branding:
+  icon: 'archive'
+  color: 'blue'
+inputs:
+  source:
+    description: 'Root of the virtual filesystem'
+    required: true
+  output:
+    description: 'Path where to store the v86 folder'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [ ! -d "${{ inputs.source }}" ]; then
+          echo "Error: Source directory '${{ inputs.source }}' does not exist"
+          exit 1
+        fi
+        echo "✓ Source directory exists: ${{ inputs.source }}"
+    
+    - name: Checkout copy/v86 repository
+      shell: bash
+      run: |
+        echo "Cloning copy/v86 repository..."
+        git clone --depth 1 https://github.com/copy/v86.git /tmp/v86-tools
+        echo "✓ copy/v86 repository cloned successfully"
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Create filesystem JSON
+      shell: bash
+      run: |
+        echo "Creating filesystem JSON from ${{ inputs.source }}..."
+        mkdir -p "${{ inputs.output }}"
+        python3 /tmp/v86-tools/tools/fs2json.py --out "${{ inputs.output }}/fs.json" "${{ inputs.source }}"
+        echo "✓ Filesystem JSON created: ${{ inputs.output }}/fs.json"
+    
+    - name: Create base directory with SHA256-named files
+      shell: bash
+      run: |
+        echo "Creating base directory..."
+        mkdir -p "${{ inputs.output }}/base"
+        python3 /tmp/v86-tools/tools/copy-to-sha256.py "${{ inputs.source }}" "${{ inputs.output }}/base"
+        echo "✓ Base directory created with SHA256-named files"
+    
+    - name: Create tarball
+      shell: bash
+      run: |
+        echo "Creating tarball..."
+        cd "${{ inputs.output }}"
+        tar -czf v86-fs.tar.gz fs.json base/
+        tarball_size=$(du -h v86-fs.tar.gz | cut -f1)
+        echo "✓ Tarball created successfully: ${{ inputs.output }}/v86-fs.tar.gz (${tarball_size})"
+    
+    - name: Cleanup
+      shell: bash
+      run: |
+        echo "Cleaning up temporary files..."
+        rm -rf /tmp/v86-tools
