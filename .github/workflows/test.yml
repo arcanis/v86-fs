@@ -1,0 +1,59 @@
+name: Test v86 Filesystem Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Create sample filesystem
+        run: |
+          mkdir -p /tmp/sample-fs/bin /tmp/sample-fs/etc /tmp/sample-fs/home
+          echo "#!/bin/sh" > /tmp/sample-fs/bin/hello
+          echo "echo 'Hello from v86!'" >> /tmp/sample-fs/bin/hello
+          chmod +x /tmp/sample-fs/bin/hello
+          echo "Sample config file" > /tmp/sample-fs/etc/config.txt
+          echo "Welcome to v86" > /tmp/sample-fs/home/readme.txt
+          
+      - name: Create v86 filesystem
+        uses: ./
+        with:
+          source: /tmp/sample-fs
+          output: ./output
+      
+      - name: Verify output
+        run: |
+          echo "Checking if output files exist..."
+          test -f ./output/fs.json && echo "✓ fs.json created"
+          test -d ./output/base && echo "✓ base/ directory created"
+          test -f ./output/v86-fs.tar.gz && echo "✓ v86-fs.tar.gz created"
+          
+          echo ""
+          echo "Contents of output directory:"
+          ls -lah ./output/
+          
+          echo ""
+          echo "Contents of base directory:"
+          ls -lah ./output/base/
+          
+          echo ""
+          echo "Tarball contents:"
+          tar -tzf ./output/v86-fs.tar.gz
+          
+          echo ""
+          echo "fs.json structure:"
+          python3 -m json.tool ./output/fs.json | head -50
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: v86-filesystem
+          path: output/v86-fs.tar.gz
