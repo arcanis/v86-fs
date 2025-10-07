@@ -1,0 +1,27 @@
+# v86 filesystem artifacts
+*.tar.gz
+fs.json
+base/
+
+# Temporary files
+/tmp/
+*.tmp
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Node modules (if any)
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
